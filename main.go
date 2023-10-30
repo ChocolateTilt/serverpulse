@@ -16,6 +16,7 @@ type serverResult struct {
 	Result string
 }
 
+// pingServer uses the ping command to send an ICMP packet to the server
 func pingServer(server string) (string, error) {
 	out, err := exec.Command("ping", server).Output()
 	if err != nil {
@@ -49,7 +50,7 @@ func readServersFromFile(filename string) ([]string, error) {
 
 // writeResultsToCSV writes the ping results to a CSV file
 func writeResultsToCSV(results []serverResult, filename string) error {
-	file, err := os.Create(filename)
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}
@@ -58,10 +59,20 @@ func writeResultsToCSV(results []serverResult, filename string) error {
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	err = writer.Write([]string{"Server", "Result"})
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	if fileInfo.Size() == 0 {
+		err = writer.Write([]string{"Server", "Result", "Timestamp"})
+		if err != nil {
+			return err
+		}
+	}
 
 	for _, result := range results {
-		err := writer.Write([]string{result.Name, result.Result})
+		err := writer.Write([]string{result.Name, result.Result, time.Now().Local().Format("01-02-2006 15:04:05")})
 		if err != nil {
 			return err
 		}
@@ -71,7 +82,7 @@ func writeResultsToCSV(results []serverResult, filename string) error {
 }
 
 func main() {
-	fmt.Println("Starting ICMP ping...")
+	log.Println("Starting ICMP ping")
 
 	servers, err := readServersFromFile("servers.txt")
 	if err != nil {
@@ -94,7 +105,7 @@ func main() {
 		log.Fatal("Error writing results file: ", err)
 	}
 
-	fmt.Println("Finished ICMP ping...")
+	log.Println("Finished ICMP ping")
 }
 
 func init() {
