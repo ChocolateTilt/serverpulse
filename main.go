@@ -16,7 +16,7 @@ type serverResult struct {
 	Result string
 }
 
-// pingServer uses the ping command to send an ICMP packet to the server
+// pingServer uses the ping command to send four ICMP packets to the server
 func pingServer(server string) (string, error) {
 	out, err := exec.Command("ping", server).Output()
 	if err != nil {
